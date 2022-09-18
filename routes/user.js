@@ -20,4 +20,13 @@ router.post(
   userController.registerUser
 );
 
+router.patch('/:id',
+  body('first_name').trim().isString().notEmpty(),
+  body('last_name').trim().isString().notEmpty(),
+  userController.updateProfile
+)
+
+router.get('/', userController.getUsers)
+router.get('/:id', userController.getUsers)
+
 module.exports = router;
