@@ -3,9 +3,12 @@ const { validationResult } = require('express-validator');
 
 const User = require('../models/user');
 
+// This is my branch
+// Just for my work
+
 const loginUser = async (req, res) => {
   console.log('Login API called...');
-  
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
