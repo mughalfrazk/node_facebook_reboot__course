@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const { validationResult } = require('express-validator');
+const fs = require('fs');
 
 const User = require('../models/user');
 
@@ -166,9 +167,9 @@ const getUsers = async (req, res) => {
     if (id) {
       users = [await User.findById(id)];
     } else if (type === 'user' || type === 'admin') {
-      users = await User.find({ role: type })
+      users = await User.find({ role: type });
     } else {
-      users = await User.find()
+      users = await User.find();
     }
   } catch (error) {
     console.log(error);
@@ -177,7 +178,37 @@ const getUsers = async (req, res) => {
       .json({ status: 500, message: 'Internal server error.' });
   }
 
-  return res.status(200).json({ status: 200, data: users })
+  return res.status(200).json({ status: 200, data: users });
+};
+
+const updateProfilePic = async (req, res) => {
+  const id = req.params.id;
+
+  let user;
+  try {
+    user = await User.findById(id);
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ status: 500, message: 'Internal server error.' });
+  }
+
+  if (!user)
+    return res.status(404).json({ status: 404, message: 'User not found!' });
+
+  user.img = '/users/' + req.file.filename;
+
+  try {
+    await user.save();
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ status: 500, message: 'Internal server error.' });
+  }
+
+  return res.status(201).send(user);
 };
 
 module.exports = {
@@ -185,4 +216,5 @@ module.exports = {
   registerUser,
   updateProfile,
   getUsers,
+  updateProfilePic,
 };
