@@ -3,18 +3,17 @@ const { body } = require('express-validator');
 const multer = require('multer');
 const storage = multer.diskStorage({
   destination: function (request, file, callback) {
-    callback(null, 'uploads/users/')
+    callback(null, 'uploads/users/');
   },
   filename: function (req, file, callback) {
     // :id
     const name = req.params.id;
     //jpeg
-    const extension = file.mimetype.split('/')[1]
-    const fullName = name + "." + extension;
+    const extension = file.mimetype.split('/')[1];
+    const fullName = name + '.' + extension;
     callback(null, fullName);
-  }
-})
-
+  },
+});
 
 const upload = multer({ storage: storage });
 
@@ -52,6 +51,7 @@ router.patch(
   upload.single('avatar'),
   userController.updateProfilePic
 );
+router.patch('/active/:userId', userController.disableUser);
 
 // router.get('/image/:name', userController.getProfilePicture);
 

@@ -35,7 +35,7 @@ const createNewPost = async (req, res) => {
 
 const getPosts = async (req, res) => {
   const { postId } = req.params;
-  const { userId } = req.query;
+  const { userId, active } = req.query;
 
   let posts = [];
   try {
@@ -44,7 +44,9 @@ const getPosts = async (req, res) => {
     } else if (userId) {
       posts = await Post.where({ user: userId }).populate('user');
     } else {
-      posts = await Post.find().populate('user');
+      posts = await Post.where({
+        active: active === 'false' ? false : true,
+      }).populate('user');
     }
   } catch (error) {
     return res
@@ -80,15 +82,14 @@ const updatePost = async (req, res) => {
 
   updatePost.title = title;
   updatePost.description = description;
-  
+
   if (req.file) {
     fs.unlink('./uploads' + updatePost.img, (err) => {
       console.log(err);
     });
-    
+
     updatePost.img = '/posts/' + req.file.filename;
   }
-
 
   try {
     await updatePost.save();
@@ -117,9 +118,45 @@ const deletePost = async (req, res) => {
   return res.status(204).json({ status: 204, message: 'Post Deleted!' });
 };
 
+const disablePost = async (req, res) => {
+  const { postId } = req.params;
+  const { active } = req.query;
+
+  let updatePost;
+  try {
+    updatePost = await Post.findById(postId);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: 500, message: 'Internal server error.' });
+  }
+
+  if (!updatePost)
+    return res.status(404).json({ status: 404, message: 'Post not found!' });
+
+  if (active === 'true') updatePost.active = true;
+  else updatePost.active = false;
+
+  // updatePost.active = active === 'true' ? true : false;
+
+  try {
+    await updatePost.save();
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ status: 500, message: 'Internal server error.' });
+  }
+
+  return res
+    .status(200)
+    .json({ status: 200, message: 'Post Updated!', data: updatePost });
+};
+
 module.exports = {
   createNewPost,
   getPosts,
   updatePost,
   deletePost,
+  disablePost,
 };

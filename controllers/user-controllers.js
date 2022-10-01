@@ -37,6 +37,11 @@ const loginUser = async (req, res) => {
       .status(404)
       .json({ status: 401, message: 'Invalid credentials.' });
 
+  if (!checkUser.active)
+    return res
+      .status(400)
+      .json({ status: 400, message: 'Your account is disabled by the admin, please contact customer service.' });
+
   res.send({
     _id: checkUser._id,
     first_name: checkUser.first_name,
@@ -58,7 +63,7 @@ const registerUser = async (req, res) => {
   }
 
   // Get data from request.
-  const { first_name, last_name, email, password } = req.body;
+  const { first_name, last_name, email, password, role } = req.body;
 
   // if email already exists.
   let checkEmail;
@@ -84,7 +89,7 @@ const registerUser = async (req, res) => {
     last_name,
     email,
     password: hashedPassword,
-    role: 'user',
+    role: role === 'admin' ? 'admin' : 'user',
   });
 
   try {
@@ -100,6 +105,10 @@ const registerUser = async (req, res) => {
     first_name: user.first_name,
     last_name: user.last_name,
     email: user.email,
+    bio: user.bio,
+    username: user.username,
+    img: user.img,
+    role: user.role,
   });
 };
 
@@ -211,10 +220,46 @@ const updateProfilePic = async (req, res) => {
   return res.status(201).send(user);
 };
 
+const disableUser = async (req, res) => {
+  const { userId } = req.params;
+  const { active } = req.query;
+
+  let updateUser;
+  try {
+    updateUser = await User.findById(userId);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: 500, message: 'Internal server error.' });
+  }
+
+  if (!updateUser)
+    return res.status(404).json({ status: 404, message: 'Post not found!' });
+
+  if (active === 'true') updateUser.active = true;
+  else updateUser.active = false;
+
+  // updatePost.active = active === 'true' ? true : false;
+
+  try {
+    await updateUser.save();
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ status: 500, message: 'Internal server error.' });
+  }
+
+  return res
+    .status(200)
+    .json({ status: 200, message: 'User Updated!', data: updateUser });
+};
+
 module.exports = {
   loginUser,
   registerUser,
   updateProfile,
   getUsers,
   updateProfilePic,
+  disableUser,
 };

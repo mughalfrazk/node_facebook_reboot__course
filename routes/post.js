@@ -42,5 +42,6 @@ router.patch(
 router.get('/', postController.getPosts);
 router.get('/:postId', postController.getPosts);
 router.delete('/:postId', postController.deletePost);
+router.patch('/active/:postId', postController.disablePost);
 
 module.exports = router;
