@@ -18,6 +18,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const userController = require('../controllers/user-controllers');
+const { jwtDecode } = require('../middleware/jwt');
 
 const router = express.Router();
 
@@ -35,6 +36,8 @@ router.post(
   body('password').trim().isString().isLength({ min: 8 }).notEmpty(),
   userController.registerUser
 );
+
+router.use(jwtDecode);
 
 router.patch(
   '/:id',

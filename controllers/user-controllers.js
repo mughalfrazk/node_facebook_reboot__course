@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const { validationResult } = require('express-validator');
-const fs = require('fs');
+const jwt = require('jsonwebtoken');
 
 const User = require('../models/user');
 
@@ -38,9 +38,20 @@ const loginUser = async (req, res) => {
       .json({ status: 401, message: 'Invalid credentials.' });
 
   if (!checkUser.active)
-    return res
-      .status(400)
-      .json({ status: 400, message: 'Your account is disabled by the admin, please contact customer service.' });
+    return res.status(400).json({
+      status: 400,
+      message:
+        'Your account is disabled by the admin, please contact customer service.',
+    });
+
+  const token = jwt.sign(
+    {
+      userId: checkUser._id,
+      role: checkUser.role,
+      email: checkUser.email,
+    },
+    process.env.JWT_SECRET_KEY
+  );
 
   res.send({
     _id: checkUser._id,
@@ -51,6 +62,7 @@ const loginUser = async (req, res) => {
     username: checkUser.username,
     img: checkUser.img,
     role: checkUser.role,
+    token,
   });
 };
 
@@ -100,6 +112,15 @@ const registerUser = async (req, res) => {
       .json({ status: 500, message: 'Internal server error' });
   }
 
+  const token = jwt.sign(
+    {
+      userId: user._id,
+      role: user.role,
+      email: user.email,
+    },
+    process.env.JWT_SECRET_KEY
+  );
+
   res.json({
     _id: user._id,
     first_name: user.first_name,
@@ -109,6 +130,7 @@ const registerUser = async (req, res) => {
     username: user.username,
     img: user.img,
     role: user.role,
+    token,
   });
 };
 
@@ -171,6 +193,11 @@ const getUsers = async (req, res) => {
   const { id } = req.params;
   const { type } = req.query;
 
+  if (req.tokenPayload.role !== 'admin')
+    return res
+      .status(401)
+      .send({ status: 401, message: 'User is not Authorized' });
+
   let users;
   try {
     if (id) {
@@ -192,6 +219,11 @@ const getUsers = async (req, res) => {
 
 const updateProfilePic = async (req, res) => {
   const id = req.params.id;
+
+  if (req.tokenPayload.role !== 'admin' && req.params.id !== req.tokenPayload.userId)
+    return res
+      .status(401)
+      .send({ status: 401, message: 'User is not Authorized' });
 
   let user;
   try {
@@ -223,6 +255,12 @@ const updateProfilePic = async (req, res) => {
 const disableUser = async (req, res) => {
   const { userId } = req.params;
   const { active } = req.query;
+
+  if (req.tokenPayload.role !== 'admin')
+    return res
+      .status(401)
+      .send({ status: 401, message: 'User is not Authorized' });
+
 
   let updateUser;
   try {
